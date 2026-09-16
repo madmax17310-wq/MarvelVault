@@ -1,0 +1,12 @@
+{
+      "expo": {
+          "name": "MarvelVault",
+              "slug": "marvelvault",
+                  "version": "1.0.0",
+                      "orientation": "portrait",
+                          "userInterfaceStyle": "dark",
+                              "assetBundlePatterns": [
+                                    "**/*"
+                                        ]
+                                          }
+                                          }
