@@ -11,31 +11,31 @@ import { useFocusEffect, router } from 'expo-router';
 
 import EmptyState from '../components/empty-state';
 import {
-  getWatchlist,
-  removeFromWatchlist,
-} from '../constants/watchlist';
+  getWatched,
+  markAsUnwatched,
+} from '../constants/watched';
 
-export default function WatchlistScreen() {
-  const [watchlist, setWatchlist] = useState([]);
+export default function WatchedHistoryScreen() {
+  const [watchedList, setWatchedList] = useState([]);
 
   useFocusEffect(
     useCallback(() => {
-      loadWatchlist();
+      loadWatched();
     }, [])
   );
 
-  async function loadWatchlist() {
-    const savedItems = await getWatchlist();
-    setWatchlist(savedItems);
+  async function loadWatched() {
+    const savedItems = await getWatched();
+    setWatchedList(savedItems);
   }
 
   async function handleRemove(item) {
-    const updatedList = await removeFromWatchlist(
+    const updatedList = await markAsUnwatched(
       item.id,
       item.type
     );
 
-    setWatchlist(updatedList);
+    setWatchedList(updatedList);
   }
 
   function openItem(item) {
@@ -60,30 +60,32 @@ export default function WatchlistScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.heading}>MY LIST</Text>
+        <Text style={styles.heading}>
+          WATCHED HISTORY
+        </Text>
 
         <Text style={styles.subtitle}>
-          YOUR SAVED MARVEL TITLES
+          YOUR WATCHED MARVEL TITLES
         </Text>
 
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>
-            WATCHLIST
+            WATCH HISTORY
           </Text>
 
           <Text style={styles.infoText}>
-            Your saved movies and series are stored on this
-            device.
+            Movies and series you mark as watched will
+            appear here.
           </Text>
         </View>
 
-        {watchlist.length === 0 ? (
+        {watchedList.length === 0 ? (
           <EmptyState
-            title="YOUR LIST IS EMPTY"
-            message="Add movies or series to your watchlist and they will appear here."
+            title="NO WATCHED TITLES"
+            message="Mark a movie or series as watched and it will appear here."
           />
         ) : (
-          watchlist.map((item) => (
+          watchedList.map((item) => (
             <View
               key={`${item.type}-${item.id}`}
               style={styles.item}
@@ -110,7 +112,9 @@ export default function WatchlistScreen() {
                   </Text>
                 </View>
 
-                <Text style={styles.arrow}>›</Text>
+                <Text style={styles.check}>
+                  ✓
+                </Text>
               </Pressable>
 
               <Pressable
@@ -118,7 +122,7 @@ export default function WatchlistScreen() {
                 onPress={() => handleRemove(item)}
               >
                 <Text style={styles.removeText}>
-                  REMOVE
+                  MARK UNWATCHED
                 </Text>
               </Pressable>
             </View>
@@ -226,9 +230,10 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 
-  arrow: {
-    color: '#777777',
-    fontSize: 25,
+  check: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '900',
     marginLeft: 8,
   },
 
@@ -247,6 +252,6 @@ const styles = StyleSheet.create({
     color: '#777777',
     fontSize: 8,
     fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
 })

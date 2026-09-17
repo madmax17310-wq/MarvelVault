@@ -1,222 +1,426 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
-    ScrollView,
-      View,
-        Text,
-          StyleSheet,
-            Pressable,
-            } from 'react-native';
-            import { router, useLocalSearchParams } from 'expo-router';
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+} from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 
-            import movies from '../data/movies';
-            import StatusBadge from '../components/status-badge';
+import movies from '../data/movies';
+import StatusBadge from '../components/status-badge';
+import {
+  getWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+} from '../constants/watchlist';
+import {
+  isWatched,
+  markAsWatched,
+  markAsUnwatched,
+} from '../constants/watched';
 
-            export default function MovieDetailsScreen() {
-              const { id } = useLocalSearchParams();
+export default function MovieDetailsScreen() {
+  const { id } = useLocalSearchParams();
 
-                const movie = movies.find((item) => item.id === id);
+  const movie = movies.find((item) => item.id === id);
 
-                  if (!movie) {
-                      return (
-                            <SafeAreaView style={styles.container}>
-                                    <View style={styles.errorContainer}>
-                                              <Text style={styles.errorTitle}>MOVIE NOT FOUND</Text>
+  const [saved, setSaved] = useState(false);
+  const [watched, setWatched] = useState(false);
 
-                                                        <Pressable
-                                                                    style={styles.backButton}
-                                                                                onPress={() => router.back()}
-                                                                                          >
-                                                                                                      <Text style={styles.backText}>GO BACK</Text>
-                                                                                                                </Pressable>
-                                                                                                                        </View>
-                                                                                                                              </SafeAreaView>
-                                                                                                                                  );
-                                                                                                                                    }
+  useEffect(() => {
+    loadStatus();
+  }, []);
 
-                                                                                                                                      return (
-                                                                                                                                          <SafeAreaView style={styles.container}>
-                                                                                                                                                <ScrollView
-                                                                                                                                                        contentContainerStyle={styles.content}
-                                                                                                                                                                showsVerticalScrollIndicator={false}
-                                                                                                                                                                      >
-                                                                                                                                                                              <Pressable
-                                                                                                                                                                                        style={styles.backButton}
-                                                                                                                                                                                                  onPress={() => router.back()}
-                                                                                                                                                                                                          >
-                                                                                                                                                                                                                    <Text style={styles.backText}>‹ BACK</Text>
-                                                                                                                                                                                                                            </Pressable>
+  async function loadStatus() {
+    if (!movie) {
+      return;
+    }
 
-                                                                                                                                                                                                                                    <Text style={styles.title}>{movie.title}</Text>
+    const list = await getWatchlist();
 
-                                                                                                                                                                                                                                            <Text style={styles.meta}>
-                                                                                                                                                                                                                                                      {movie.year} • {movie.universe} • {movie.phase}
-                                                                                                                                                                                                                                                              </Text>
+    const exists = list.some(
+      (item) =>
+        item.id === movie.id &&
+        item.type === 'movie'
+    );
 
-                                                                                                                                                                                                                                                                      <View style={styles.infoCard}>
-                                                                                                                                                                                                                                                                                <Text style={styles.label}>DURATION</Text>
-                                                                                                                                                                                                                                                                                          <Text style={styles.value}>
-                                                                                                                                                                                                                                                                                                      {movie.duration || 'N/A'}
-                                                                                                                                                                                                                                                                                                                </Text>
+    setSaved(exists);
 
-                                                                                                                                                                                                                                                                                                                          <Text style={styles.label}>GENRE</Text>
-                                                                                                                                                                                                                                                                                                                                    <Text style={styles.value}>
-                                                                                                                                                                                                                                                                                                                                                {movie.genre || 'N/A'}
-                                                                                                                                                                                                                                                                                                                                                          </Text>
-                                                                                                                                                                                                                                                                                                                                                                  </View>
+    const watchedStatus = await isWatched(
+      movie.id,
+      'movie'
+    );
 
-                                                                                                                                                                                                                                                                                                                                                                          <View style={styles.section}>
-                                                                                                                                                                                                                                                                                                                                                                                    <Text style={styles.sectionTitle}>OVERVIEW</Text>
+    setWatched(watchedStatus);
+  }
 
-                                                                                                                                                                                                                                                                                                                                                                                              <Text style={styles.description}>
-                                                                                                                                                                                                                                                                                                                                                                                                          {movie.description}
-                                                                                                                                                                                                                                                                                                                                                                                                                    </Text>
-                                                                                                                                                                                                                                                                                                                                                                                                                            </View>
+  async function handleWatchlist() {
+    if (!movie) {
+      return;
+    }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                    <View style={styles.section}>
-                                                                                                                                                                                                                                                                                                                                                                                                                                              <Text style={styles.sectionTitle}>WATCH STATUS</Text>
+    if (saved) {
+      await removeFromWatchlist(movie.id, 'movie');
+      setSaved(false);
+    } else {
+      await addToWatchlist({
+        id: movie.id,
+        title: movie.title,
+        year: movie.year,
+        universe: movie.universe,
+        phase: movie.phase,
+        type: 'movie',
+      });
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        <StatusBadge
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    text={movie.watched ? 'WATCHED' : 'UNWATCHED'}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                              />
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </View>
+      setSaved(true);
+    }
+  }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <View style={styles.section}>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <Text style={styles.sectionTitle}>WATCH OPTIONS</Text>
+  async function handleWatched() {
+    if (!movie) {
+      return;
+    }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <View style={styles.watchCard}>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <Text style={styles.watchTitle}>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            Official Platforms
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </Text>
+    if (watched) {
+      await markAsUnwatched(
+        movie.id,
+        'movie'
+      );
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <Text style={styles.watchText}>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  Check legal streaming or digital purchase options
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                available in your region.
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </Text>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </View>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </View>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </ScrollView>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </SafeAreaView>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          );
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }
+      setWatched(false);
+    } else {
+      await markAsWatched({
+        id: movie.id,
+        title: movie.title,
+        year: movie.year,
+        universe: movie.universe,
+        phase: movie.phase,
+        type: 'movie',
+      });
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          const styles = StyleSheet.create({
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            container: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                flex: 1,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    backgroundColor: '#080808',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      },
+      setWatched(true);
+    }
+  }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        content: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            padding: 20,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                paddingBottom: 50,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  },
+  if (!movie) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>
+            MOVIE NOT FOUND
+          </Text>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    backButton: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        alignSelf: 'flex-start',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            backgroundColor: '#121212',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                borderRadius: 10,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    borderWidth: 1,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        borderColor: '#222222',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            paddingHorizontal: 14,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                paddingVertical: 9,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    marginBottom: 25,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      },
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backText}>
+              GO BACK
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        backText: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            color: '#ffffff',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                fontSize: 11,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    fontWeight: '800',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        letterSpacing: 1,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          },
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backText}>‹ BACK</Text>
+        </Pressable>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            title: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                color: '#ffffff',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    fontSize: 30,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        fontWeight: '900',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            letterSpacing: 1,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              },
+        <Text style={styles.title}>
+          {movie.title}
+        </Text>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                meta: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    color: '#777777',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        fontSize: 11,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            marginTop: 8,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                marginBottom: 24,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  },
+        <Text style={styles.meta}>
+          {movie.year} • {movie.universe} • {movie.phase}
+        </Text>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    infoCard: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        backgroundColor: '#121212',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            borderRadius: 16,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                borderWidth: 1,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    borderColor: '#222222',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        padding: 18,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            marginBottom: 28,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              },
+        <Pressable
+          style={[
+            styles.watchlistButton,
+            saved && styles.watchlistButtonSaved,
+          ]}
+          onPress={handleWatchlist}
+        >
+          <Text
+            style={[
+              styles.watchlistText,
+              saved && styles.watchlistTextSaved,
+            ]}
+          >
+            {saved
+              ? '✓ IN MY LIST'
+              : '+ ADD TO MY LIST'}
+          </Text>
+        </Pressable>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                label: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    color: '#555555',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        fontSize: 9,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            fontWeight: '900',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                letterSpacing: 1,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    marginTop: 8,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      },
+        <Pressable
+          style={[
+            styles.watchedButton,
+            watched && styles.watchedButtonActive,
+          ]}
+          onPress={handleWatched}
+        >
+          <Text
+            style={[
+              styles.watchedText,
+              watched && styles.watchedTextActive,
+            ]}
+          >
+            {watched
+              ? '✓ MARKED AS WATCHED'
+              : '○ MARK AS WATCHED'}
+          </Text>
+        </Pressable>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        value: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            color: '#ffffff',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                fontSize: 13,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    marginTop: 5,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        marginBottom: 8,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          },
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>
+            CURRENT STATUS
+          </Text>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            section: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                marginBottom: 28,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  },
+          <StatusBadge
+            text={watched ? 'WATCHED' : 'UNWATCHED'}
+          />
+        </View>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    sectionTitle: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        color: '#ffffff',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            fontSize: 13,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                fontWeight: '900',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    letterSpacing: 1.2,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        marginBottom: 10,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          },
+        <View style={styles.infoCard}>
+          <Text style={styles.label}>DURATION</Text>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            description: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                color: '#888888',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    fontSize: 12,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        lineHeight: 20,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          },
+          <Text style={styles.value}>
+            {movie.duration || 'N/A'}
+          </Text>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            watchCard: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                backgroundColor: '#121212',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    borderRadius: 14,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        borderWidth: 1,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            borderColor: '#222222',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                padding: 16,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  },
+          <Text style={styles.label}>GENRE</Text>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    watchTitle: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        color: '#ffffff',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            fontSize: 13,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                fontWeight: '800',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  },
+          <Text style={styles.value}>
+            {movie.genre || 'N/A'}
+          </Text>
+        </View>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    watchText: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        color: '#666666',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            fontSize: 11,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                lineHeight: 18,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    marginTop: 6,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      },
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            OVERVIEW
+          </Text>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        errorContainer: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            flex: 1,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                alignItems: 'center',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    justifyContent: 'center',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        padding: 20,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          },
+          <Text style={styles.description}>
+            {movie.description ||
+              `Explore ${movie.title} as part of the ${movie.universe} universe.`}
+          </Text>
+        </View>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            errorTitle: {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                color: '#ffffff',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    fontSize: 18,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        fontWeight: '900',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            marginBottom: 20,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              },
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              })
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            WATCH OPTIONS
+          </Text>
+
+          <View style={styles.watchCard}>
+            <Text style={styles.watchTitle}>
+              Official Platforms
+            </Text>
+
+            <Text style={styles.watchText}>
+              Check legal streaming or digital purchase
+              options available in your region.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#080808',
+  },
+
+  content: {
+    padding: 20,
+    paddingBottom: 50,
+  },
+
+  backButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#121212',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#222222',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginBottom: 25,
+  },
+
+  backText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+
+  title: {
+    color: '#ffffff',
+    fontSize: 30,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  meta: {
+    color: '#777777',
+    fontSize: 11,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+
+  watchlistButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+
+  watchlistButtonSaved: {
+    backgroundColor: '#1c1c1c',
+    borderWidth: 1,
+    borderColor: '#444444',
+  },
+
+  watchlistText: {
+    color: '#080808',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  watchlistTextSaved: {
+    color: '#ffffff',
+  },
+
+  watchedButton: {
+    backgroundColor: '#121212',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#292929',
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginBottom: 22,
+  },
+
+  watchedButtonActive: {
+    backgroundColor: '#1c1c1c',
+    borderColor: '#555555',
+  },
+
+  watchedText: {
+    color: '#888888',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  watchedTextActive: {
+    color: '#ffffff',
+  },
+
+  statusRow: {
+    marginBottom: 22,
+  },
+
+  statusLabel: {
+    color: '#555555',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+
+  infoCard: {
+    backgroundColor: '#121212',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#222222',
+    padding: 18,
+    marginBottom: 28,
+  },
+
+  label: {
+    color: '#555555',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginTop: 8,
+  },
+
+  value: {
+    color: '#ffffff',
+    fontSize: 13,
+    marginTop: 5,
+    marginBottom: 8,
+  },
+
+  section: {
+    marginBottom: 28,
+  },
+
+  sectionTitle: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+  },
+
+  description: {
+    color: '#888888',
+    fontSize: 12,
+    lineHeight: 20,
+  },
+
+  watchCard: {
+    backgroundColor: '#121212',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#222222',
+    padding: 16,
+  },
+
+  watchTitle: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  watchText: {
+    color: '#666666',
+    fontSize: 11,
+    lineHeight: 18,
+    marginTop: 6,
+  },
+
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+
+  errorTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: 20,
+  },
+})
