@@ -1,18 +1,21 @@
 {
-      "name": "marvelvault",
-      "version": "1.0.0",
-      "private": true,
-      "main": "expo-router/entry",
-      "scripts": {
-            "start": "expo start",
-            "android": "expo start --android",
-            "web": "expo start --web"
-      },
-      "dependencies": {
-            "@react-native-async-storage/async-storage": "^3.1.1",
-            "expo": "~57.0.22",
-            "expo-router": "~57.0.21",
-            "react": "19.2.3",
-            "react-native": "0.86.3"
-      }
+  "name": "marvelvault",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "expo": "~57.0.22",
+    "expo-router": "~57.0.21",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-web": "^0.21.2"
+  }
 }
